@@ -16,16 +16,33 @@ void showBoard(char board[][7]) {
 	}
 }
 
-bool checkVictory(int i, int j, char board[][7]) {
+bool checkVictory(int i, int j, char board[][7], bool wrapAround) {
+	//CheckVictory will return true if a player won
+	//First lets look at the piece we were passed in
 	char target = board[i][j];
+	//If we were passed in a dash, then obviously no one won
 	if (target == '-') return false;
+	//These min max values are going to be how we handle the wrap around win condition
+	//
+	int cmax = 8;
+	int rmax = 7;
+	int cmin = 0;
+	int rmin = 0;
+	int a, b;
+	//If we have wrap around on, increase the range our for loops are going to loop by an additional 3 loops
+	//3 because that's how far a wrap around might go
+	if (wrapAround) { cmax += 3; rmax += 3; cmin -= 3; rmin -= 3; }
 	//First lets check if we have a horizontal win.
 	//We will do these checks by incrementing a counter
 	int horizCounter = 0;
 	//Let's search the entire row for a string of 4 target characters
-	for (int k = 1; k < 8; k++) {
+	for (int k = 1; k < cmax; k++) {
+		//We need this a = k line because if we are in wrap around mode we can't use k
+		a = k;
+		//If k has set a to an out of bounds value, then we are going to decrement a to create our wrap around effect
+		if (a > 7) a -= 7;
 		//If we found our character, increment one
-		if (board[k][j] == target) horizCounter++;
+		if (board[a][j] == target) horizCounter++;
 		//If we found one of the other two characters, reset
 		else horizCounter = 0;
 		//If we reached 4, someone won!
@@ -33,35 +50,55 @@ bool checkVictory(int i, int j, char board[][7]) {
 	}
 	//Let's do it again for verticle
 	int vertCounter = 0;
-	for (int k = 1; k < 7; k++) {
+	for (int k = 1; k < rmax; k++) {
+		b = k;
+		if (b > 6) b -= 6;
 		//This time the column stays the same but the row changes
-		if (board[i][k] == target) vertCounter++;
+		if (board[i][b] == target) vertCounter++;
 		else vertCounter = 0;
 		if (vertCounter == 4) return true;
 	}
 	//Now for diagonals
 	//First we have to find the lowest point on our potential diagonal win
-	//For up-right we would do this
-	int a, b;
-	for (a = i, b = j; a > 0 && b < 7; a--, b++);
+	//For up-right we would do this with c and d
+	int c, d;
+	for (c = i, d = j; c > cmin && d < rmax; c--, d++);
+	//Basically using a for loop we found the first 'edge' of the diagonal, whether it be on the column or row
+	//Thinking about it now with the way for loops work, this might create an out of bound exception. Hmmmmm.
 	int diagCounter1 = 0;
-	for (; a < 8 && b > 0; a++, b--) {
+	//Now we move along the diagonal to find a row of four
+	for (; c < cmax && d > rmin; c++, d--) {
+		//These four lines are accounting for wrap around again
+		a = c;
+		if (a > 7) a -= 7;
+		if (a < 1) a += 7;
+		b = d;
+		if (b > 6) b -= 6;
+		if (b < 1) b += 6;
 		if (board[a][b] == target) diagCounter1++;
 		else diagCounter1 = 0;
 		if (diagCounter1 == 4) return true;
 	}
 	//up left is similar but we change the way we move down
-	for (a = i, b = j; a < 8 && b < 7; a++, b++);
+	for (c = i, d = j; c < cmax && d < rmax; c++, d++);
 	int diagCounter2 = 0;
 	//and change the way we move up
-	for (; a > 0 && b > 0; a--, b--) {
+	for (; c > cmin && d > rmin; c--, d--) {
+		a = c;
+		if (a < 1) a += 7;
+		if (a > 7) a -= 7;
+		b = d;
+		if (b > 6) b -= 6;
+		if (b < 1) b += 6;
 		if (board[a][b] == target) diagCounter2++;
 		else diagCounter2 = 0;
 		if (diagCounter2 == 4) return true;
 	}
+	//If we have wrap around enabled, then we also have to check dia
+	//If we never go to return true on any of these four loops, there was no winner
 	return false;
 }
-int removePiece(char board[][7], int player, int i, int j) {
+int removePiece(char board[][7], int player, int i, int j, bool wrapAround) {
 	//Removing a piece is funky but we can do it
 	int a, b;
 	//Find the character the player is trying to remove
@@ -79,7 +116,7 @@ int removePiece(char board[][7], int player, int i, int j) {
 	//Since we shifted every piece in the column, we have to check if anyone has won
 	//by checking every piece in that column
 	for (int k = 6; k > 1; k--) {
-		if (checkVictory(i, k, board)) {
+		if (checkVictory(i, k, board, wrapAround)) {
 			//If there is a winner, whose piece is it? Return a number accordingly
 			if (board[i][k] == 'x') return 2;
 			if (board[i][k] == 'o') return 3;
@@ -88,7 +125,7 @@ int removePiece(char board[][7], int player, int i, int j) {
 	//Otherwise, carryon and return 0
 	return 0;
 }
-int playMove(int player, int col, char board[][7]) {
+int playMove(int player, int col, char board[][7], bool wrapAround) {
 	//What we have to do here is look for the first non '-' spot in the column and replace it with an x or o
 	//Also to note, we have three cases of outcomes here
 	//1. The move was successful and there was no victory
@@ -102,7 +139,7 @@ int playMove(int player, int col, char board[][7]) {
 			if (player == 1) board[col][i] = 'x';
 			if (player == 2) board[col][i] = 'o';
 			//Check for victory
-			if (checkVictory(col, i, board)) return 2;
+			if (checkVictory(col, i, board, wrapAround)) return 2;
 			//If not, return 1
 			else return 1;
 		}
@@ -116,7 +153,9 @@ int main()
 {
 	//First of all, will we have removal mode?
 	char removalMode;
+	char wrapMode;
 	bool rm = false;
+	bool wm = false;
 	cout << "Let's play connect 4!\n";
 	system("pause");
 	cout << "\nWould you like to play removal mode?\ny or n\n";
@@ -126,12 +165,12 @@ int main()
 		cin >> removalMode;
 		//If the input is good, break
 		if (removalMode == 'y') {
-			cout << "\nRemoval Mode on\nGreat, let's begin!\n";
+			cout << "\nRemoval Mode on\n";
 			rm = true;
 			break;
 		}
 		if (removalMode == 'n') {
-			cout << "\nRemoval mode off\nGreat, let's begin!\n";
+			cout << "\nRemoval mode off\n";
 			rm = false;
 			break;
 		}
@@ -141,6 +180,29 @@ int main()
 		cin.clear();
 		cin.ignore(numeric_limits<streamsize>::max(), '\n');
 		cout << "\nEnter y or n to play with removal mode\n";
+	}
+	//Now lets do it for wrap-around mode
+	cout << "\nWould you like to play wrap-around mode?\ny or n\n";
+	while (true) {
+		//Get the removal mode
+		cin >> wrapMode;
+		//If the input is good, break
+		if (wrapMode == 'y') {
+			cout << "\nWrap-around Mode on\nGreat, let's begin!\n";
+			wm = true;
+			break;
+		}
+		if (wrapMode == 'n') {
+			cout << "\nWrap-around mode off\nGreat, let's begin!\n";
+			wm = false;
+			break;
+		}
+		//If not, clear cin and try again
+		//Got these two lines of code from stack overflow
+		//I will be using them a lot
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cout << "\nEnter y or n to play with wrap-around mode\n";
 	}
 
 	//Once we have the removal mode let's make the game board by making a double char array
@@ -187,7 +249,7 @@ int main()
 				//We subtract by 48 to account for ascii
 				col -= 48;
 				//Play player one's move
-				status1 = playMove(1, col, board);
+				status1 = playMove(1, col, board, wm);
 				//Show the board
 				showBoard(board);
 				//If the move was successful then break out of the loop. If not, 
@@ -214,7 +276,7 @@ int main()
 							rcol -= 48;
 							rrow -= 48;
 							//If we got both good data for row and col, run the function and get the result
-							int result = removePiece(board, 1, rcol, rrow);
+							int result = removePiece(board, 1, rcol, rrow, wm);
 							//1 means the player tried to remove a piece they couldnt
 							if (result == 1) cout << "\nYou can't remove that piece.\n";
 							//2 or 3 means someone won so we set that person's status to 2
@@ -268,7 +330,7 @@ int main()
 			if (col >= '1' && col <= '7') {
 				col -= 48;
 				//Play player two's move
-				status2 = playMove(2, col, board);
+				status2 = playMove(2, col, board, wm);
 				showBoard(board);
 				if (status2 == 1 || status2 == 2) success = true;
 				if (status2 == 3) cout << "\nThat column is full!\nTry again\n";
@@ -288,7 +350,7 @@ int main()
 							rcol -= 48;
 							rrow -= 48;
 							//If we got both good data for row and col, run the function and get the result
-							int result = removePiece(board, 2, rcol, rrow);
+							int result = removePiece(board, 2, rcol, rrow, wm);
 							//1 means the player tried to remove a piece they couldnt
 							if (result == 1) cout << "\nYou can't remove that piece.\n";
 							//2 or 3 means someone won
