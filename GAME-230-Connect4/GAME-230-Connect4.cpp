@@ -5,6 +5,8 @@
 #include <iostream>
 using namespace std;
 
+
+
 void showBoard(char board[][7]) {
 	//Double for loop to print out every element in the double array by row
 	//Is there a more efficient way to do this?
@@ -15,7 +17,24 @@ void showBoard(char board[][7]) {
 		cout << endl;
 	}
 }
-
+bool checkWinner(int s1, int s2) {
+	//Two is the magic number that means someone won
+	//If both players won then print out it was a draw
+	if (s1 == 2 && s2 == 2) {
+		cout << "\nThis game is a draw!\n";
+		return true;
+	}
+	//Or see if just one of the players won
+	else if (s1 == 2) {
+		cout << "\nPlayer one wins!\n";
+		return true;
+	}
+	else if (s2 == 2) {
+		cout << "\nPlayer two wins!\n";
+		return true;
+	}
+	else return false;
+}
 bool checkVictory(int i, int j, char board[][7], bool wrapAround) {
 	//CheckVictory will return true if a player won
 	//First lets look at the piece we were passed in
@@ -68,7 +87,7 @@ bool checkVictory(int i, int j, char board[][7], bool wrapAround) {
 	int diagCounter1 = 0;
 	//Now we move along the diagonal to find a row of four
 	for (; c < cmax && d > rmin; c++, d--) {
-		//These four lines are accounting for wrap around again
+		//These six lines are accounting for wrap around again
 		a = c;
 		if (a > 7) a -= 7;
 		if (a < 1) a += 7;
@@ -145,10 +164,138 @@ int playMove(int player, int col, char board[][7], bool wrapAround) {
 	//If we reached this point is means that we exited the for loop and that column was full
 	return 3;
 }
+void playerOnesTurn(char board[][7], bool rm, bool wm, int &numTurns, int &status1, int &status2) {
+	while (true) {
+		//This bool signifies if the user put in good input
+		//If they did, we will use success to break out of this turn's loop
+		bool success = false;
+		char col;
+		//Get the input
+		cin >> col;
+		//If it was between 1 and 7 then we can play that move
+		if (col >= '1' && col <= '7') {
+			//We subtract by 48 to account for ascii
+			col -= 48;
+			//Play player one's move
+			status1 = playMove(1, col, board, wm);
+			//Show the board
+			showBoard(board);
+			//If the move was successful then break out of the loop. If not, 
+			if (status1 == 1 || status1 == 2) { success = true; numTurns++; }
+			//If the column was full, we do nothing and DONT set success to true so we will loop again
+			if (status1 == 3) cout << "\nThat column is full!\nTry again\n";
+		}
+		//If the user entered r and we are in removal mode
+		else if (col == 'r' && rm) {
+			//start another input loop for a col and row to delete
+			while (true) {
+				cout << "\nPlayer one has chosen to remove a piece.\nPlease select the column of the piece\n";
+				char rcol;
+				//Get the col
+				cin >> rcol;
+				//If the col input was good, get the row
+				if (rcol >= '1' && rcol <= '7') {
+					cout << "\nNow choose a row\n";
+					char rrow;
+					cin >> rrow;
+					//If the row was also good
+					if (rrow <= '6' && rrow >= '1') {
+						//account for ascii again
+						rcol -= 48;
+						rrow -= 48;
+						//If we got both good data for row and col, run the function and get the result
+						int result = removePiece(board, 1, rcol, rrow, wm, status1, status2);
+						//1 means the player tried to remove a piece they couldnt
+						if (result == 1) cout << "\nYou can't remove that piece.\n";
+						//If result is 0, then the removal worked and we may even have winners
+						if (result == 0) { success = true; showBoard(board);  cout << "\nPiece removed\n";  break; }
+					}
+				}
+				//If we didn't break earlier in this removal input loop, we will here after reprinting the board
+				cin.clear();
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
+				cout << "\nTry again\n";
+				showBoard(board);
+				cout << "\nGo ahead player one\nChoose a row to play\n";
+				if (rm) cout << "Or hit r to remove a piece\n";
+				break;
 
+			}
+		}
+		else {
+			//If there was bad input at the source
+			//We don't want to break here or it would end this turn
+			cin.clear();
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
+			cout << "\nEnter a value between 1 and 7. Try again player one.\n";
+			if (rm) cout << "Or hit r to remove a piece\n";
+		}
+		//If player one did something good, break to the next turn
+		if (success) break;
+	}
+}
+void playerTwosTurn(char board[][7], bool rm, bool wm, int &numTurns, int &status1, int &status2) {
+	while (true) {
+		char col;
+		cin >> col;
+		bool success = false;
+		if (col >= '1' && col <= '7') {
+			col -= 48;
+			//Play player two's move
+			status2 = playMove(2, col, board, wm);
+			showBoard(board);
+			if (status2 == 1 || status2 == 2) { success = true; numTurns++; }
+			if (status2 == 3) cout << "\nThat column is full!\nTry again\n";
+		}
+		else if (col == 'r' && rm) {
+			//start another input loop for a col and row
+			while (true) {
+				cout << "\nPlayer two has chosen to remove a piece.\nPlease select the column of the piece\n";
+				char rcol;
+				cin >> rcol;
+				//If rcol was good, get rrow
+				if (rcol >= '1' && rcol <= '7') {
+					cout << "\nNow choose a row\n";
+					char rrow;
+					cin >> rrow;
+					if (rrow <= '6' && rrow >= '1') {
+						rcol -= 48;
+						rrow -= 48;
+						//If we got both good data for row and col, run the function and get the result
+						int result = removePiece(board, 2, rcol, rrow, wm, status1, status2);
+						//1 means the player tried to remove a piece they couldnt
+						if (result == 1) cout << "\nYou can't remove that piece.\n";
+						//If result is 0, then the removal worked and we may even have winners
+						if (result == 0) { success = true; showBoard(board);  cout << "\nPiece removed\n";  break; }
+					}
+				}
+				//If we didn't break before, reprint everything
+				//Then break again
+				cin.clear();
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
+				cout << "\nTry again\n";
+				showBoard(board);
+				cout << "\nGo ahead player two\nChoose a row to play\n";
+				if (rm) cout << "Or hit r to remove a piece\n";
+				break;
+
+			}
+		}
+		else {
+			//If there was bad input...
+			cin.clear();
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
+			cout << "\nEnter a value between 1 and 7. Try again player two.\n";
+			if (rm) cout << "Or hit r to remove a piece\n";
+		}
+		//If success, then end the turn
+		if (success) break;
+	}
+}
 
 int main()
 {
+	//This is the main game loop that we will go back to if the player wants to play again
 	while (true) {
 		//First of all, will we have removal mode?
 		char removalMode;
@@ -235,170 +382,29 @@ int main()
 			//We will have to do this before player two's turn as well
 			//The thing to note is that if there is removal mode, the game is never a draw because players can remove pieces
 			if (numTurns == 42 && !rm) { cout << "\nThe board is full!\nThis game is a draw\n"; break; }
-			//col will be the variable for the column they choose to play
-			char col = 0;
 			//Status will be the check for certain board conditions such as overflow or victory
 			int status1 = 0;
 			int status2 = 0;
+
 			cout << "\nGo ahead player one\nChoose a row to play\n";
 			if (rm) cout << "Or hit r to remove a piece\n";
-			//Start our good input loop again
-			//This is also the start of Player One's turn
-			while (true) {
-				//This bool signifies if the user put in good input
-				//If they did, we will use success to break out of this turn's loop
-				bool success = false;
-				//Get the input
-				cin >> col;
-				//If it was between 1 and 7 then we can play that move
-				if (col >= '1' && col <= '7') {
-					//We subtract by 48 to account for ascii
-					col -= 48;
-					//Play player one's move
-					status1 = playMove(1, col, board, wm);
-					//Show the board
-					showBoard(board);
-					//If the move was successful then break out of the loop. If not, 
-					if (status1 == 1 || status1 == 2) { success = true; numTurns++; }
-					//If the column was full, we do nothing and DONT set success to true so we will loop again
-					if (status1 == 3) cout << "\nThat column is full!\nTry again\n";
-				}
-				//If the user entered r and we are in removal mode
-				else if (col == 'r' && rm) {
-					//start another input loop for a col and row to delete
-					while (true) {
-						cout << "\nPlayer one has chosen to remove a piece.\nPlease select the column of the piece\n";
-						char rcol;
-						//Get the col
-						cin >> rcol;
-						//If the col input was good, get the row
-						if (rcol >= '1' && rcol <= '7') {
-							cout << "\nNow choose a row\n";
-							char rrow;
-							cin >> rrow;
-							//If the row was also good
-							if (rrow <= '6' && rrow >= '1') {
-								//account for ascii again
-								rcol -= 48;
-								rrow -= 48;
-								//If we got both good data for row and col, run the function and get the result
-								int result = removePiece(board, 1, rcol, rrow, wm, status1, status2);
-								//1 means the player tried to remove a piece they couldnt
-								if (result == 1) cout << "\nYou can't remove that piece.\n";
-								//If result is 0, then the removal worked and we may even have winners
-								if (result == 0) { success = true; showBoard(board);  cout << "\nPiece removed\n";  break; }
-							}
-						}
-						//If we didn't break earlier in this removal input loop, we will here after reprinting the board
-						cin.clear();
-						cin.ignore(numeric_limits<streamsize>::max(), '\n');
-						cout << "\nTry again\n";
-						showBoard(board);
-						cout << "\nGo ahead player one\nChoose a row to play\n";
-						if (rm) cout << "Or hit r to remove a piece\n";
-						break;
+			//This is the start of player one's turn
+			playerOnesTurn(board, rm, wm, numTurns, status1, status2);
 
-					}
-				}
-				else {
-					//If there was bad input at the source
-					//We don't want to break here or it would end this turn
-					cin.clear();
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					cout << "\nEnter a value between 1 and 7. Try again player one.\n";
-					if (rm) cout << "Or hit r to remove a piece\n";
-				}
-				//If player one did something good, break to the next turn
-				if (success) break;
-			}
-			//but first see if anyone won
-			if (status1 == 2 && status2 == 2) {
-				cout << "\nThis game is a draw!\n";
-				break;
-			}
-			else if (status1 == 2) {
-				cout << "\nPlayer one has achieved victory!\n";
-				break;
-			}
-			else if (status2 == 2) {
-				cout << "\nPlayer two has achieved victory!\n";
-				break;
-			}
-			//First check numTurns
+			//See if anyone won
+			if (checkWinner(status1, status2)) break;
+
+			//Then check numTurns
 			if (numTurns == 42 && !rm) { cout << "\nThe board is full!\nThis game is a draw\n"; break; }
-			//reset for player two
-			col = 0;
+			
+			//Now player two's turn
 			cout << "\nYour turn player two\nChoose a row to play\n";
 			if (rm) cout << "Or hit r to remove a piece\n";
 			//Do what we just did again, but for player two this time
-			while (true) {
-				cin >> col;
-				bool success = false;
-				if (col >= '1' && col <= '7') {
-					col -= 48;
-					//Play player two's move
-					status2 = playMove(2, col, board, wm);
-					showBoard(board);
-					if (status2 == 1 || status2 == 2) { success = true; numTurns++; }
-					if (status2 == 3) cout << "\nThat column is full!\nTry again\n";
-				}
-				else if (col == 'r' && rm) {
-					//start another input loop for a col and row
-					while (true) {
-						cout << "\nPlayer two has chosen to remove a piece.\nPlease select the column of the piece\n";
-						char rcol;
-						cin >> rcol;
-						//If rcol was good, get rrow
-						if (rcol >= '1' && rcol <= '7') {
-							cout << "\nNow choose a row\n";
-							char rrow;
-							cin >> rrow;
-							if (rrow <= '6' && rrow >= '1') {
-								rcol -= 48;
-								rrow -= 48;
-								//If we got both good data for row and col, run the function and get the result
-								int result = removePiece(board, 2, rcol, rrow, wm, status1, status2);
-								//1 means the player tried to remove a piece they couldnt
-								if (result == 1) cout << "\nYou can't remove that piece.\n";
-								//If result is 0, then the removal worked and we may even have winners
-								if (result == 0) { success = true; showBoard(board);  cout << "\nPiece removed\n";  break; }
-							}
-						}
-						//If we didn't break before, reprint everything
-						//Then break again
-						cin.clear();
-						cin.ignore(numeric_limits<streamsize>::max(), '\n');
-						cout << "\nTry again\n";
-						showBoard(board);
-						cout << "\nGo ahead player two\nChoose a row to play\n";
-						if (rm) cout << "Or hit r to remove a piece\n";
-						break;
+			playerTwosTurn(board, rm, wm, numTurns, status1, status2);
 
-					}
-				}
-				else {
-					//If there was bad input...
-					cin.clear();
-					cin.ignore(numeric_limits<streamsize>::max(), '\n');
-					cout << "\nEnter a value between 1 and 7. Try again player two.\n";
-					if (rm) cout << "Or hit r to remove a piece\n";
-				}
-				//If success, then end the turn
-				if (success) break;
-			}
 			//Look for a winner
-			if (status1 == 2 && status2 == 2) {
-				cout << "\nThis game is a draw!\n";
-				break;
-			}
-			else if (status1 == 2) {
-				cout << "\nPlayer one has achieved victory!\n";
-				break;
-			}
-			else if (status2 == 2) {
-				cout << "\nPlayer two has achieved victory!\n";
-				break;
-			}
+			if (checkWinner(status1, status2)) break;
 		}
 		//Here is where we can play again
 		//which is only asked if we reached the end of the second outer most while loop
