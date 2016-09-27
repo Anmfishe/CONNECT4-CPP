@@ -172,6 +172,7 @@ void playerOnesTurn(char board[][7], bool rm, bool wm, int &numTurns, int &statu
 		char col;
 		//Get the input
 		cin >> col;
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
 		//If it was between 1 and 7 then we can play that move
 		if (col >= '1' && col <= '7') {
 			//We subtract by 48 to account for ascii
@@ -193,6 +194,7 @@ void playerOnesTurn(char board[][7], bool rm, bool wm, int &numTurns, int &statu
 				char rcol;
 				//Get the col
 				cin >> rcol;
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
 				//If the col input was good, get the row
 				if (rcol >= '1' && rcol <= '7') {
 					cout << "\nNow choose a row\n";
@@ -238,6 +240,7 @@ void playerTwosTurn(char board[][7], bool rm, bool wm, int &numTurns, int &statu
 	while (true) {
 		char col;
 		cin >> col;
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
 		bool success = false;
 		if (col >= '1' && col <= '7') {
 			col -= 48;
@@ -253,6 +256,7 @@ void playerTwosTurn(char board[][7], bool rm, bool wm, int &numTurns, int &statu
 				cout << "\nPlayer two has chosen to remove a piece.\nPlease select the column of the piece\n";
 				char rcol;
 				cin >> rcol;
+				cin.ignore(numeric_limits<streamsize>::max(), '\n');
 				//If rcol was good, get rrow
 				if (rcol >= '1' && rcol <= '7') {
 					cout << "\nNow choose a row\n";
@@ -309,6 +313,7 @@ int main()
 		while (true) {
 			//Get the removal mode
 			cin >> removalMode;
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
 			//If the input is good, break
 			if (removalMode == 'y') {
 				cout << "\nRemoval Mode on\n";
@@ -332,6 +337,7 @@ int main()
 		while (true) {
 			//Get the removal mode
 			cin >> wrapMode;
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
 			//If the input is good, break
 			if (wrapMode == 'y') {
 				cout << "\nWrap-around Mode on\nGreat, let's begin!\n";
@@ -412,6 +418,7 @@ int main()
 		while (true) {
 			char playAgain;
 			cin >> playAgain;
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
 			if (playAgain == 'y') break;
 			else if (playAgain == 'n') return 0;
 			else {
